@@ -60,4 +60,44 @@ defmodule Symmath.Derivative do
     end
   end
 
+  def apply_chain_rule(outer, inner) do
+    # 1. Rewrite 'inner' in outer as var(x)
+    # 2. derive `outer`
+    # 3. Rewrite var(x) back as `inner` in the result.
+    outer_deriv = 
+      outer
+      |> IO.inspect
+      |> rewrite_expr_as_x(inner)
+      |> IO.inspect
+      |> ast_deriv
+      |> IO.inspect
+      |> rewrite_x_as_expr(inner)
+      |> IO.inspect
+
+    {:* ,[], [outer_deriv, ast_deriv(inner)]}
+  end
+
+  def rewrite_expr_as_x(containing_expr, expr) do
+    containing_expr |> Macro.prewalk(fn cur_expr -> 
+      if cur_expr == expr do
+        Macro.var(:x, nil)
+      else
+        cur_expr
+      end
+    end)
+  end
+
+  def rewrite_x_as_expr(containing_expr, expr) do
+    containing_expr |> Macro.prewalk(fn cur_expr -> 
+      if cur_expr == {:x, [], nil} do
+        expr
+      else
+        cur_expr
+      end
+    end)
+  end
+
+
+
+
 end
