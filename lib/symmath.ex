@@ -37,6 +37,13 @@ defmodule Symmath do
     end
   end
 
+  @doc """
+  Attempts to simplify the expression using some very basic rewriting rules.
+  """
+  def simplify(expression) do
+    Symmath.Simplify.simplify(expression)
+  end
+
 
   @doc """
   Attempts to obtain the derivative of a given expression.

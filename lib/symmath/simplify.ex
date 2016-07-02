@@ -1,6 +1,6 @@
 defmodule Symmath.Simplify do
   import Symmath.Guards
-  
+
   @moduledoc """
   Contains rules to simplify a Symbolic Math expression.
   """
@@ -22,16 +22,11 @@ defmodule Symmath.Simplify do
   # Operators that are computable when both sides are constants without losing info.
   @computable_binary_operators [:+, :-, :*]
 
-  # for op <- @computable_binary_operators do
-  #   IO.puts "OP: #{op}"
-  #   def ast_simplify({op, i, [lhs, rhs]}) when is_constant(lhs) and is_constant(rhs) do
-  #     apply(Kernel, op, [lhs, rhs])
-  #   end
-  # end
-
-  def ast_simplify({:+, i, [lhs, rhs]}) when is_constant(lhs) and is_constant(rhs) do
-      apply(Kernel, :+, [lhs, rhs])
+  for op <- @computable_binary_operators do
+    def ast_simplify({op, i, [lhs, rhs]}) when is_constant(lhs) and is_constant(rhs) do
+      apply(Kernel, op, [lhs, rhs])
     end
+  end
 
   def ast_simplify({op, i, [lhs, rhs]}) do
     {op, i, [ast_simplify(lhs), ast_simplify(rhs)]}
