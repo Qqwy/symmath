@@ -1,4 +1,7 @@
 defmodule Symmath do
+  import Symmath.Guards
+
+
   defmodule Expr do
     defstruct [:ast]
   
@@ -47,18 +50,24 @@ defmodule Symmath do
   Returns 'true' if the passed AST describes a variable.
   The variable itself is not evaluated, nor checked if it exists in the given context.
   """
-  defmacro is_var(value)
-  defmacro is_var({a, _, ctx}) when is_atom(a) and is_atom(ctx), do: true
-  defmacro is_var(_), do: false
+  # defmacro is_var(value)
+  # defmacro is_var({a, _, ctx}) when is_atom(a) and is_atom(ctx), do: true
+  # defmacro is_var(_), do: false
 
   @doc """
   Returns true if the passed value is a constant
   Either a number, or a mathematical constant such as `e` or `pi`.
   """
-  defmacro is_constant(value)
-  defmacro is_constant(value) when is_number(value), do: true
-  defmacro is_constant(value = {name, _, ctx}) when is_var(value) and name in @mathematical_constants, do: true
-  defmacro is_constant(_), do: false
+  # defmacro is_constant(value)
+  # defmacro is_constant(value) when is_number(value), do: true
+  # defmacro is_constant(value = {name, _, ctx}) when is_var(value) and name in @mathematical_constants, do: true
+  # defmacro is_constant(_), do: false
+
+
+
+  # defmacro gs_is_var(value) when is_atom(elem(value, 0)) and is_atom(elem(value, 2)), do: true
+  # defmacro gs_is_constant(value) when is_number(value) or (gs_is_var(value) and elem(value, 0) in @mathematical_constants), do: true
+
 
   # Derivative of a constant == 0.
   def ast_deriv(a) when is_number(a) do
