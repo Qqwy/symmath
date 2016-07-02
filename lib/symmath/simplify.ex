@@ -10,6 +10,8 @@ defmodule Symmath.Simplify do
     %Symmath.Expr{expr | ast: ast_simplify(expr.ast)}
   end
 
+  # Zero-argument base cases
+
   def ast_simplify(var) when is_var(var) do
     var
   end
@@ -17,6 +19,22 @@ defmodule Symmath.Simplify do
   def ast_simplify(constant) when is_constant(constant) do
     constant
   end
+
+  # UNARY
+
+  # Unary operators on computable constants, e.g. -(2) == -2
+  @computable_unary_operators [:+, :-]
+
+  def ast_simplify({op, i, [operand]}) when op in @computable_unary_operators and is_number(operand) do
+    apply(Kernel, op, [operand])
+  end
+
+  # Recursively calling on unary
+  def ast_simplify({op, i, [operand]}) do
+    {op, i, [ast_simplify(operand)]}
+  end
+
+  # BINARY
 
   # Operators that are computable when both sides are constants without losing info.
   @computable_binary_operators [:+, :-, :*]
@@ -46,8 +64,86 @@ defmodule Symmath.Simplify do
     ast_simplify(  {op, i, [{op, [], [lhs, rhs_a]}, rhs_b]})
   end
 
+  # Change (x + 0), (x - 0) to a
+  def ast_simplify({op, _, [a, 0]}) when op in [:+, :-] do
+    a
+  end
 
+  def ast_simplify({:+, _, [0, a]}) do
+    a
+  end
 
+  # Change (0 - x) to -x
+  def ast_simplify({:-, _, [0, a]}) do
+    {:-, [], [a]}
+  end
+
+  # Change (0 * a) to 0
+  def ast_simplify(:*, _, [0, a]) do
+    0
+  end
+
+  # Change (1 * a) to a
+  def ast_simplify({:*, _, [1, a]}) do
+    a
+  end
+
+  # Change (a - a) to 0
+  def ast_simplify({:-, _, [a, a]}) do
+    0
+  end
+
+  # Change (a + a) to (2 * a)
+  def ast_simplify({:+, i, [a, a]}) do
+    {:*, i, [2, a]}
+  end
+
+  # Change (a * a) to pow(a, 2)
+  def ast_simplify({:*, i, [a, a]}) do
+    {:pow, [], [a, 2]}
+  end
+
+  # Change pow(a, 1) to a
+  def ast_simplify({:pow, _, [a, 1]}) do
+    a
+  end
+
+  # Change pow(a, 0) to 1
+  def ast_simplify({:pow, _, [a, 0]}) do
+    1
+  end
+
+  # Change addition with unary minus into minus (2 + (-x)) = (2 - x)
+  def ast_simplify({:+, _, [lhs, {:-, _, [rhs]}]}) do
+    {:-, [], [lhs, rhs]}
+  end
+
+  # Change subtraction with unary minus into plus (2 - (-x)) = (2 - x)
+  def ast_simplify({:-, _, [lhs, {:-, _, [rhs]}]}) do
+    {:+, [], [lhs, rhs]}
+  end
+
+  # Change (2 + (x - 2)) to  x
+  def ast_simplify({:+, _, [lhs, {:-, _, [rhs_a, lhs]}]}) do
+    rhs_a
+  end
+
+  # Change ((2 + x) - 2) to x
+  def ast_simplify({:-, _, [{:+, _, [rhs, lhs_b]}, rhs]}) do
+    lhs_b
+  end  
+
+  # Change (2 - (x - 2)) to -x
+  def ast_simplify({:-, _, [lhs, {:-, _, [rhs_a, lhs]}]}) do
+    {:-, [], [rhs_a]}
+  end 
+
+  # Change ((2 - x) - 2) to -x
+  def ast_simplify({:-, _, [{:-, _, [rhs, lhs_b]}, rhs]}) do
+    {:-, [], [lhs_b]}
+  end
+
+  # Recursively tries simplification on two-argument functions until nothing changes.
   def ast_simplify(original_expr = {op, i, [lhs, rhs]}) do
     new_expr = {op, i, [ast_simplify(lhs), ast_simplify(rhs)]}
     IO.inspect("#{inspect new_expr} ## recursive simplify checking")
