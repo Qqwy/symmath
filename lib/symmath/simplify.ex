@@ -6,6 +6,14 @@ defmodule Symmath.Simplify do
   """
   alias __MODULE__
 
+
+  @doc """
+
+  ## Examples
+
+  iex> Symmath.expr(3 * (2 * pow(x, 2 - 1)))
+  Symmath.expr(6 * x)
+  """
   def simplify(expr = %Symmath.Expr{}) do
     %Symmath.Expr{expr | ast: ast_simplify(expr.ast)}
   end
@@ -36,57 +44,29 @@ defmodule Symmath.Simplify do
 
   # BINARY
 
-  # Operators that are computable when both sides are constants without losing info.
-  @computable_binary_operators [:+, :-, :*]
-
-  def ast_simplify({op, i, [lhs, rhs]}) when op in @computable_binary_operators and is_number(lhs) and is_number(rhs) do
-    apply(Kernel, op, [lhs, rhs])
+  # Change (0 + a) to a
+  def ast_simplify({:+, _, [0, a]}) do
+    a
   end
-
-  @commutative_operators [:+, :*]
-
-  # Re-order commutative operators to have constants at the front
-  # Note that the `<` ensures that we don't continue doing this operation over and over, regardless of if rhs and lhs are numbers or mathematical constants.
-  def ast_simplify({op, i, [lhs, rhs]}) when op in @commutative_operators and is_constant(rhs) and rhs < lhs do
-    ast_simplify({op, i, [rhs, lhs]})
-  end
-
-  # Commutative Operators: Look two layers deep into right operand, 
-  # so things like 2 * (3 * x) are changed to (2 * 3) * x
-  def ast_simplify(expr = {op, i, [lhs, {op2, _, [rhs_a, rhs_b]}]}) 
-  when  op in @commutative_operators 
-    and op2 == op 
-    and is_constant(lhs) 
-    and is_constant(rhs_a) 
-    and ((is_number(lhs) and is_number(rhs_a)) or lhs < rhs_a)
-  do
-    IO.inspect(" #{inspect expr} ## Rebalancing ")
-    ast_simplify(  {op, i, [{op, [], [lhs, rhs_a]}, rhs_b]})
-  end
-
-  # Change (x + 0), (x - 0) to a
+  
+  # Change (a + 0), (a - 0) to a
   def ast_simplify({op, _, [a, 0]}) when op in [:+, :-] do
     a
   end
 
-  def ast_simplify({:+, _, [0, a]}) do
-    a
-  end
-
-  # Change (0 - x) to -x
+  # Change (0 - a) to -a
   def ast_simplify({:-, _, [0, a]}) do
     {:-, [], [a]}
   end
 
   # Change (0 * a) to 0
-  def ast_simplify(:*, _, [0, a]) do
-    0
-  end
+  def ast_simplify({:*, _, [0, a]}), do: 0
+  def ast_simplify({:*, _, [a, 0]}), do: 0
+
 
   # Change (1 * a) to a
-  def ast_simplify({:*, _, [1, a]}) do
-    a
-  end
+  def ast_simplify({:*, _, [1, a]}), do: a
+  def ast_simplify({:*, _, [a, 1]}), do: a
 
   # Change (a - a) to 0
   def ast_simplify({:-, _, [a, a]}) do
@@ -112,6 +92,45 @@ defmodule Symmath.Simplify do
   def ast_simplify({:pow, _, [a, 0]}) do
     1
   end
+
+  # Operators that are computable when both sides are constants without losing info.
+  @computable_binary_operators [:+, :-, :*]
+
+  def ast_simplify({op, i, [lhs, rhs]}) when op in @computable_binary_operators and is_number(lhs) and is_number(rhs) do
+    apply(Kernel, op, [lhs, rhs])
+  end
+
+  @commutative_operators [:+, :*]
+
+  # Re-order commutative operators to have constants at the front
+  # Note that the `<` ensures that we don't continue doing this operation over and over, regardless of if rhs and lhs are numbers or mathematical constants.
+  def ast_simplify({op, i, [lhs, rhs]}) when op in @commutative_operators and is_constant(rhs) and rhs < lhs do
+    ast_simplify({op, i, [rhs, lhs]})
+  end
+
+  # Reduces (3 * (2 * x))  to (6 * x)
+  def ast_simplify(expr = {op, i, [lhs, {op2, _, [rhs_a, rhs_b]}]}) 
+  when  op in @commutative_operators 
+    and op2 == op 
+    and is_number(lhs) and is_number(rhs_a)
+  do
+    new_lhs = apply(Kernel, op, [lhs, rhs_a])
+    {op, [], [new_lhs, ast_simplify(rhs_b)]}
+  end
+
+  # Commutative Operators: Look two layers deep into right operand, 
+  # so things like 2 * (3 * x) are changed to (2 * 3) * x
+  def ast_simplify(expr = {op, i, [lhs, {op2, _, [rhs_a, rhs_b]}]}) 
+  when  op in @commutative_operators 
+    and op2 == op 
+    and is_constant(lhs) 
+    and is_constant(rhs_a)
+    and lhs < rhs_a
+  do
+    IO.inspect(" #{inspect expr} ## Rebalancing ")
+    ast_simplify(  {op, i, [{op, [], [lhs, rhs_a]}, rhs_b]})
+  end
+
 
   # Change addition with unary minus into minus (2 + (-x)) = (2 - x)
   def ast_simplify({:+, _, [lhs, {:-, _, [rhs]}]}) do
