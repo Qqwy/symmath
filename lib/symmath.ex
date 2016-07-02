@@ -31,7 +31,10 @@ defmodule Symmath do
   Instead, it is treated as a symbolic representation.
   """
   defmacro expr(expression) do
-    escaped_expr = Macro.escape(expression)
+    escaped_expr = 
+      expression
+      |> Macro.prewalk(fn e -> Macro.update_meta(e, &Keyword.delete(&1, :line)) end)
+      |> Macro.escape
     quote do 
         %Expr{ast: unquote(escaped_expr) }
     end
