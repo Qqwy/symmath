@@ -75,12 +75,12 @@ defmodule Symmath.Simplify do
 
   # Change (a + a) to (2 * a)
   def ast_simplify({:+, i, [a, a]}) do
-    {:*, i, [2, a]}
+    ast_simplify {:*, i, [2, a]}
   end
 
   # Change (a * a) to pow(a, 2)
   def ast_simplify({:*, i, [a, a]}) do
-    {:pow, [], [a, 2]}
+    ast_simplify {:pow, [], [a, 2]}
   end
 
   # Change pow(a, 1) to a

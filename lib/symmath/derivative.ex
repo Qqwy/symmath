@@ -60,6 +60,23 @@ defmodule Symmath.Derivative do
     end
   end
 
+  # pow(f(x), r) -> in this case, apply chain rule to inside.
+  def ast_deriv(expr = {:pow, i, [base, exponent]}) when is_constant(exponent) do
+    IO.puts "Applying chain rule to base #{inspect expr}"
+    apply_chain_rule(expr, base)
+  end
+
+  def ast_deriv(expr = {:pow, i, [base, exponent]}) when not(is_constant(exponent)) and not(is_var(exponent)) do
+    IO.puts "Applying chain rule to exponent #{inspect expr}"
+    apply_chain_rule(expr, exponent)
+  end
+
+  # For any unmatched operation, try the chain rule.
+  def ast_deriv(expr = {op, i, [lhs, rhs]}) do
+    #apply_chain_rule(expr, rhs)
+    expr
+  end
+
   def apply_chain_rule(outer, inner) do
     # 1. Rewrite 'inner' in outer as var(x)
     # 2. derive `outer`
@@ -88,7 +105,7 @@ defmodule Symmath.Derivative do
   end
 
   def rewrite_x_as_expr(containing_expr, expr) do
-    containing_expr |> Macro.prewalk(fn cur_expr -> 
+    containing_expr |> Macro.postwalk(fn cur_expr -> 
       if cur_expr == {:x, [], nil} do
         expr
       else
