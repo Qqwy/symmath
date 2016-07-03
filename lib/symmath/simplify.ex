@@ -56,7 +56,7 @@ defmodule Symmath.Simplify do
 
   # Change (0 - a) to -a
   def ast_simplify({:-, _, [0, a]}) do
-    {:-, [], [a]}
+    ast_simplify {:-, [], [a]}
   end
 
   # Change (0 * a) to 0
