@@ -40,7 +40,6 @@ defmodule Symmath.Derivative do
 
   # (f()*g())' === ((f()'*g()) + (f()*g()')) Product Rule
   def ast_deriv({:*, i, [a, b]}) do
-    IO.puts "TEST"
     da = ast_deriv(a)
     db = ast_deriv(b)
     {:+, i, [{:*, [], [da, b]}, {:*, [], [a, db]}]}
@@ -62,12 +61,10 @@ defmodule Symmath.Derivative do
 
   # pow(f(x), r) -> in this case, apply chain rule to inside.
   def ast_deriv(expr = {:pow, i, [base, exponent]}) when is_constant(exponent) do
-    IO.puts "Applying chain rule to base #{inspect expr}"
     apply_chain_rule(expr, base)
   end
 
   def ast_deriv(expr = {:pow, i, [base, exponent]}) when not(is_constant(exponent)) and not(is_var(exponent)) do
-    IO.puts "Applying chain rule to exponent #{inspect expr}"
     apply_chain_rule(expr, exponent)
   end
 
@@ -77,19 +74,16 @@ defmodule Symmath.Derivative do
     expr
   end
 
+  # TODO: Buggy implementation. Will go wrong if :x is also part of other operand of `outer`.
   def apply_chain_rule(outer, inner) do
     # 1. Rewrite 'inner' in outer as var(x)
     # 2. derive `outer`
     # 3. Rewrite var(x) back as `inner` in the result.
     outer_deriv = 
       outer
-      |> IO.inspect
       |> rewrite_expr_as_x(inner)
-      |> IO.inspect
       |> ast_deriv
-      |> IO.inspect
       |> rewrite_x_as_expr(inner)
-      |> IO.inspect
 
     {:* ,[], [outer_deriv, ast_deriv(inner)]}
   end

@@ -127,7 +127,6 @@ defmodule Symmath.Simplify do
     and is_constant(rhs_a)
     and lhs < rhs_a
   do
-    IO.inspect(" #{inspect expr} ## Rebalancing ")
     ast_simplify(  {op, i, [{op, [], [lhs, rhs_a]}, rhs_b]})
   end
 
@@ -165,7 +164,6 @@ defmodule Symmath.Simplify do
   # Recursively tries simplification on two-argument functions until nothing changes.
   def ast_simplify(original_expr = {op, i, [lhs, rhs]}) do
     new_expr = {op, i, [ast_simplify(lhs), ast_simplify(rhs)]}
-    IO.inspect("#{inspect new_expr} ## recursive simplify checking")
     # When simplification happened in one of the operands, maybe we can now simplify the result, so call recursively.
     if new_expr != original_expr do
       ast_simplify(new_expr)
