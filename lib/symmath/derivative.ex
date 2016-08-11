@@ -7,9 +7,15 @@ defmodule Symmath.Derivative do
   Note that the implementation is probably incomplete.
   """
   def deriv(expr = %Symmath.Expr{}) do
-    %Symmath.Expr{expr | ast: ast_deriv(expr.ast)}
+    expr
+    |> simplify
+    |> do_deriv
+    |> simplify    
   end
 
+  defp do_deriv(expr = %Symmath.Expr{}) do
+    %Symmath.Expr{expr | ast: ast_deriv(expr.ast)}
+  end
 
   # Derivative of a constant == 0.
   def ast_deriv(a) when is_number(a) do
@@ -90,20 +96,20 @@ defmodule Symmath.Derivative do
 
   def rewrite_expr_as_x(containing_expr, expr) do
     containing_expr |> Macro.prewalk(fn cur_expr -> 
-      if cur_expr == expr do
-        Macro.var(:x, nil)
-      else
-        cur_expr
+      case cur_expr do
+        expr          -> Macro.var(:x, nil)
+        {:x, [], nil} -> {:_x, [], nil}
+      _               -> cur_expr
       end
     end)
   end
 
   def rewrite_x_as_expr(containing_expr, expr) do
     containing_expr |> Macro.postwalk(fn cur_expr -> 
-      if cur_expr == {:x, [], nil} do
-        expr
-      else
-        cur_expr
+      case cur_expr do
+        {:x,  [], nil} -> expr
+        {:_x, [], nil} -> {:x, [], nil}
+        _              -> cur_expr
       end
     end)
   end

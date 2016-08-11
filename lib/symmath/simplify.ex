@@ -161,6 +161,22 @@ defmodule Symmath.Simplify do
     {:-, [], [lhs_b]}
   end
 
+  # Change x * pow(x, y) to pow(x, y+1)
+  def ast_simplify({:*, _, [base, {:pow, _, [base, exponent]}]}) do
+    ast_simplify {:pow, [], [base, {:+, [], [exponent, 1]}]}
+  end
+
+  # Change pow(x, 2) * pow(x, 3) to pow(x, 2+3)
+  def ast_simplify({:*, _, [{:pow, _, [base, exponent_1]}, {:pow, _, [base, exponent_2]}]}) do
+    ast_simplify {:pow, [], [base, {:+, [], [exponent_1, exponent_2]}]}
+  end
+
+  # Change pow(pow(x, 2), 3) to pow(x, 6)
+  def ast_simplify({:pow, _, [{:pow, [], [base, exponent_1]}, exponent_2]}) do
+    ast_simplify {:pow, [], [base, {:*, [], [exponent_1, exponent_2]}]}
+  end
+
+
   # Recursively tries simplification on two-argument functions until nothing changes.
   def ast_simplify(original_expr = {op, i, [lhs, rhs]}) do
     new_expr = {op, i, [ast_simplify(lhs), ast_simplify(rhs)]}
